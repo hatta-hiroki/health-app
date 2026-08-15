@@ -569,8 +569,23 @@ def create_questions(req: SymptomRequest,user=Depends(get_current_user)):
             detail="症状を入力してください"
         )
 
+    # レートリミットは確認のみ（カウントしない）
     plan = get_user_plan(user.id)
-    check_rate_limit(user.id, plan)
+    limit = PREMIUM_DAILY_LIMIT if plan == "premium" else FREE_DAILY_LIMIT
+    now = time.time()
+    one_day_ago = now - 86400
+    recent = [t for t in rate_limit_store.get(user.id, []) if t > one_day_ago]
+    if len(recent) >= limit:
+        if plan == "free":
+            raise HTTPException(
+                status_code=429,
+                detail="無料プランの1日の利用上限（1回）に達しました。プレミアムプランにアップグレードすると1日20回まで利用できます。"
+            )
+        else:
+            raise HTTPException(
+                status_code=429,
+                detail=f"1日の利用上限（{limit}回）に達しました。24時間後に再度お試しください。"
+            )
 
     logger.info("問診リクエスト受信: user=%s, plan=%s", user.id, plan)
 
