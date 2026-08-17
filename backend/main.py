@@ -385,16 +385,25 @@ def get_usage(user=Depends(get_current_user)):
     now = time.time()
     one_day_ago = now - 86400
 
-    used = len([
+    timestamps = [
         t for t in rate_limit_store.get(user.id, [])
         if t > one_day_ago
-    ])
+    ]
+    used = len(timestamps)
+    remaining = max(0, limit - used)
+
+    # 次に回数が復活する時刻（上限到達時のみ）
+    reset_at = None
+    if remaining == 0 and timestamps:
+        oldest = min(timestamps)
+        reset_at = datetime.fromtimestamp(oldest + 86400, tz=timezone.utc).isoformat()
 
     return {
         "plan": plan,
         "daily_limit": limit,
         "used": used,
-        "remaining": max(0, limit - used),
+        "remaining": remaining,
+        "reset_at": reset_at,
     }
 
 @app.get(

@@ -60,7 +60,7 @@ export default function Home() {
   const [selectedHistory, setSelectedHistory] = useState<History | null>(null)
   const [error, setError] = useState('')
   const [profile, setProfile] = useState<{ prefecture: string; city: string; plan: string } | null>(null)
-  const [usage, setUsage] = useState<{ plan: string; daily_limit: number; used: number; remaining: number } | null>(null)
+  const [usage, setUsage] = useState<{ plan: string; daily_limit: number; used: number; remaining: number; reset_at: string | null } | null>(null)
   const [weather, setWeather] = useState<{
     weather: string
     temperature: number
@@ -474,11 +474,16 @@ export default function Home() {
                     {usage ? `残り${usage.remaining}/1回` : '1日1回まで'}
                   </span>
                 </div>
+                {usage?.remaining === 0 && usage.reset_at && (
+                  <p className="text-xs text-amber-700 mt-1">
+                    次回利用可能: {new Date(usage.reset_at).toLocaleString('ja-JP')}
+                  </p>
+                )}
                 <p className="text-sm text-purple-800 font-medium">
                   プレミアムプランにアップグレード
                 </p>
                 <ul className="text-xs text-purple-600 mt-1 space-y-0.5">
-                  <li>✓ 1日20回まで利用可能</li>
+                  <li>✓ 1日10回まで利用可能</li>
                   <li>✓ 天気・気圧を考慮した詳細診断</li>
                   <li>✓ YouTube関連動画の表示</li>
                   <li>✓ 診断履歴の保存・閲覧</li>
@@ -500,6 +505,11 @@ export default function Home() {
                   {usage && (
                     <span className="text-xs text-gray-500">
                       残り{usage.remaining}/{usage.daily_limit}回
+                    </span>
+                  )}
+                  {usage?.remaining === 0 && usage.reset_at && (
+                    <span className="text-xs text-amber-600">
+                      （{new Date(usage.reset_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}に復活）
                     </span>
                   )}
                   <span className="text-sm font-medium text-blue-900">
