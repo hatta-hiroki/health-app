@@ -59,7 +59,7 @@ app.add_middleware(
 
 # レートリミット設定
 FREE_DAILY_LIMIT = 1
-PREMIUM_DAILY_LIMIT = int(os.getenv("DAILY_RATE_LIMIT", "20"))
+PREMIUM_DAILY_LIMIT = int(os.getenv("DAILY_RATE_LIMIT", "10"))
 
 # インメモリレートリミッター
 rate_limit_store: dict[str, list[float]] = defaultdict(list)
@@ -376,6 +376,26 @@ def get_current_user(
             status_code=401,
             detail="ログインしてください"
         )
+
+# 残り相談回数を取得
+@app.get("/usage")
+def get_usage(user=Depends(get_current_user)):
+    plan = get_user_plan(user.id)
+    limit = PREMIUM_DAILY_LIMIT if plan == "premium" else FREE_DAILY_LIMIT
+    now = time.time()
+    one_day_ago = now - 86400
+
+    used = len([
+        t for t in rate_limit_store.get(user.id, [])
+        if t > one_day_ago
+    ])
+
+    return {
+        "plan": plan,
+        "daily_limit": limit,
+        "used": used,
+        "remaining": max(0, limit - used),
+    }
 
 @app.get(
     "/history",

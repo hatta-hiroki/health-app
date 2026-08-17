@@ -60,6 +60,7 @@ export default function Home() {
   const [selectedHistory, setSelectedHistory] = useState<History | null>(null)
   const [error, setError] = useState('')
   const [profile, setProfile] = useState<{ prefecture: string; city: string; plan: string } | null>(null)
+  const [usage, setUsage] = useState<{ plan: string; daily_limit: number; used: number; remaining: number } | null>(null)
   const [weather, setWeather] = useState<{
     weather: string
     temperature: number
@@ -100,6 +101,15 @@ export default function Home() {
       if (session) {
         const token = session.access_token
         try {
+          // 使用状況を取得
+          const usageRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/usage`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          if (usageRes.ok) {
+            const usageData = await usageRes.json()
+            setUsage(usageData)
+          }
+
           const profileRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/profile`, {
             headers: { Authorization: `Bearer ${token}` },
           })
@@ -243,6 +253,23 @@ export default function Home() {
       setResult(data)
       setQuestions([])
       setAnswers([])
+
+      // 使用状況を更新
+      try {
+        const {
+          data: { session: currentSession },
+        } = await supabase.auth.getSession()
+        if (currentSession) {
+          const usageRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/usage`, {
+            headers: { Authorization: `Bearer ${currentSession.access_token}` },
+          })
+          if (usageRes.ok) {
+            setUsage(await usageRes.json())
+          }
+        }
+      } catch (e) {
+        // 使用状況更新失敗は無視
+      }
     } catch (error) {
       console.error(error)
       if (error instanceof Error) {
@@ -443,7 +470,9 @@ export default function Home() {
                   <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full font-medium">
                     無料プラン
                   </span>
-                  <span className="text-xs text-gray-500">1日1回まで</span>
+                  <span className="text-xs text-gray-500">
+                    {usage ? `残り${usage.remaining}/1回` : '1日1回まで'}
+                  </span>
                 </div>
                 <p className="text-sm text-purple-800 font-medium">
                   プレミアムプランにアップグレード
@@ -468,6 +497,11 @@ export default function Home() {
                   <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full font-medium">
                     プレミアム
                   </span>
+                  {usage && (
+                    <span className="text-xs text-gray-500">
+                      残り{usage.remaining}/{usage.daily_limit}回
+                    </span>
+                  )}
                   <span className="text-sm font-medium text-blue-900">
                     📍 {profile.prefecture}{profile.city}
                   </span>
