@@ -5,30 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
-/**
- * Supabaseの英語エラーメッセージを日本語に変換する
- */
-function translateAuthError(message: string): string {
-  const map: Record<string, string> = {
-    'Invalid login credentials': 'メールアドレスまたはパスワードが正しくありません',
-    'Email not confirmed': 'メールアドレスが確認されていません。確認メールをご確認ください',
-    'Invalid email or password': 'メールアドレスまたはパスワードが正しくありません',
-    'User not found': 'ユーザーが見つかりません',
-    'Email rate limit exceeded': 'リクエスト回数の上限に達しました。しばらくしてから再度お試しください',
-    'Too many requests': 'リクエスト回数の上限に達しました。しばらくしてから再度お試しください',
-    'Network request failed': 'ネットワークエラーが発生しました。通信環境をご確認ください',
-  }
-
-  for (const [key, value] of Object.entries(map)) {
-    if (message.includes(key)) {
-      return value
-    }
-  }
-
-  // マッチしない場合は汎用メッセージ
-  return 'ログインに失敗しました。入力内容をご確認ください'
-}
-
 export default function LoginPage() {
   const router = useRouter()
 
@@ -36,19 +12,38 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isLocked, setIsLocked] = useState(false)
 
   const login = async () => {
     setLoading(true)
     setError('')
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // バックエンドのログインエンドポイント経由（アカウントロック機能付き）
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+
+      if (!response.ok) {
+        const err = await response.json()
+        if (response.status === 423) {
+          setIsLocked(true)
+        }
+        setError(err.detail)
+        setLoading(false)
+        return
+      }
+
+      // バックエンドで認証成功後、フロントエンドのSupabaseセッションも確立
+      const { error: supabaseError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (error) {
-        setError(translateAuthError(error.message))
+      if (supabaseError) {
+        setError('ログイン処理に失敗しました。再度お試しください。')
         setLoading(false)
         return
       }
@@ -78,7 +73,14 @@ export default function LoginPage() {
         </p>
 
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          <div className={`mb-4 px-4 py-3 rounded-lg text-sm ${
+            isLocked
+              ? 'bg-orange-50 border border-orange-200 text-orange-700'
+              : 'bg-red-50 border border-red-200 text-red-700'
+          }`}>
+            {isLocked && (
+              <p className="font-medium mb-1">アカウントロック</p>
+            )}
             {error}
           </div>
         )}
@@ -91,8 +93,9 @@ export default function LoginPage() {
             type="email"
             placeholder="example@mail.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-gray-300 p-3 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            onChange={(e) => { setEmail(e.target.value); setIsLocked(false) }}
+            disabled={isLocked}
+            className="w-full border border-gray-300 p-3 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition disabled:bg-gray-100"
           />
 
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -103,13 +106,14 @@ export default function LoginPage() {
             placeholder="パスワードを入力"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-gray-300 p-3 rounded-lg mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            disabled={isLocked}
+            className="w-full border border-gray-300 p-3 rounded-lg mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition disabled:bg-gray-100"
           />
         </div>
 
         <button
           onClick={login}
-          disabled={loading || !email.trim() || !password.trim()}
+          disabled={loading || !email.trim() || !password.trim() || isLocked}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg font-medium transition disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {loading ? 'ログイン中...' : 'ログイン'}

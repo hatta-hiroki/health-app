@@ -359,6 +359,72 @@ def root():
         "message": "Health App API Running"
     }
 
+# アカウントロック設定
+LOGIN_MAX_ATTEMPTS = 5
+LOGIN_LOCK_SECONDS = 900  # 15分間ロック
+
+# ログイン試行管理 {email: {"attempts": int, "locked_until": float}}
+login_attempt_store: dict[str, dict] = {}
+
+class LoginRequest(BaseModel):
+    email: str = Field(..., min_length=1, max_length=255)
+    password: str = Field(..., min_length=1, max_length=128)
+
+class LoginResponse(BaseModel):
+    access_token: str
+    user_id: str
+    email: str
+
+@app.post("/auth/login", response_model=LoginResponse)
+def login(req: LoginRequest):
+    email = req.email.lower().strip()
+
+    # ロック確認
+    attempt_info = login_attempt_store.get(email, {"attempts": 0, "locked_until": 0})
+    now = time.time()
+
+    if attempt_info["locked_until"] > now:
+        remaining_min = int((attempt_info["locked_until"] - now) / 60) + 1
+        raise HTTPException(
+            status_code=423,
+            detail=f"アカウントが一時的にロックされています。{remaining_min}分後に再度お試しください。"
+        )
+
+    # Supabaseでログイン試行
+    try:
+        auth_response = supabase_auth.auth.sign_in_with_password({
+            "email": req.email,
+            "password": req.password,
+        })
+
+        # 成功 → 試行回数リセット
+        login_attempt_store.pop(email, None)
+
+        return {
+            "access_token": auth_response.session.access_token,
+            "user_id": auth_response.user.id,
+            "email": auth_response.user.email,
+        }
+
+    except Exception as e:
+        # 失敗 → 試行回数カウント
+        attempt_info["attempts"] = attempt_info.get("attempts", 0) + 1
+
+        if attempt_info["attempts"] >= LOGIN_MAX_ATTEMPTS:
+            attempt_info["locked_until"] = now + LOGIN_LOCK_SECONDS
+            login_attempt_store[email] = attempt_info
+            raise HTTPException(
+                status_code=423,
+                detail=f"ログインに{LOGIN_MAX_ATTEMPTS}回失敗したため、アカウントを15分間ロックしました。"
+            )
+
+        login_attempt_store[email] = attempt_info
+        remaining = LOGIN_MAX_ATTEMPTS - attempt_info["attempts"]
+        raise HTTPException(
+            status_code=401,
+            detail=f"メールアドレスまたはパスワードが正しくありません（残り{remaining}回）"
+        )
+
 def get_current_user(
     authorization: str = Header(...)
 ):
