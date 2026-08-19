@@ -4,9 +4,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
-/**
- * Supabaseの英語エラーメッセージを日本語に変換する
- */
 function translateAuthError(message: string): string {
   const map: Record<string, string> = {
     'User already registered': 'このメールアドレスは既に登録されています',
@@ -86,28 +83,28 @@ export default function SignupPage() {
   return (
     <main className="min-h-screen flex justify-center items-center px-4 py-8">
       <div className="w-full max-w-md bg-white shadow-lg rounded-2xl p-6 sm:p-8">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-center">
+        <h1 className="text-3xl font-bold mb-2 text-center text-gray-900">
           新規登録
         </h1>
 
-        <p className="text-sm text-gray-500 text-center mb-6">
+        <p className="text-base text-gray-600 text-center mb-6">
           アカウントを作成して利用を開始
         </p>
 
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm whitespace-pre-line">
+          <div className="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-base whitespace-pre-line">
             {error}
           </div>
         )}
 
         {message && (
-          <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+          <div className="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg text-base">
             {message}
           </div>
         )}
 
         <div onKeyDown={handleKeyDown}>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-base font-medium text-gray-900 mb-1">
             メールアドレス
           </label>
           <input
@@ -115,10 +112,10 @@ export default function SignupPage() {
             placeholder="example@mail.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-gray-300 p-3 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+            className="w-full border border-gray-300 p-3 rounded-lg mb-4 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
           />
 
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-base font-medium text-gray-900 mb-1">
             パスワード
           </label>
           <input
@@ -126,9 +123,9 @@ export default function SignupPage() {
             placeholder="パスワードを入力"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-gray-300 p-3 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+            className="w-full border border-gray-300 p-3 rounded-lg mb-2 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
           />
-          <p className="text-xs text-gray-500 mb-6">
+          <p className="text-sm text-gray-600 mb-6">
             8文字以上、大文字・小文字・数字をそれぞれ1文字以上含めてください
           </p>
         </div>
@@ -136,14 +133,14 @@ export default function SignupPage() {
         <button
           onClick={signup}
           disabled={!email.trim() || !password.trim()}
-          className="w-full bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg font-medium transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="w-full bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg text-base font-bold transition disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           新規登録
         </button>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-base text-gray-600">
           既にアカウントをお持ちの方は{' '}
-          <Link href="/login" className="text-blue-600 hover:underline font-medium">
+          <Link href="/login" className="text-blue-600 hover:underline font-bold">
             ログイン
           </Link>
         </p>

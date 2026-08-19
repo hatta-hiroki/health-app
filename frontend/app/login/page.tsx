@@ -19,7 +19,6 @@ export default function LoginPage() {
     setError('')
 
     try {
-      // バックエンドのログインエンドポイント経由（アカウントロック機能付き）
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -36,7 +35,6 @@ export default function LoginPage() {
         return
       }
 
-      // バックエンドで認証成功後、フロントエンドのSupabaseセッションも確立
       const { error: supabaseError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -64,29 +62,29 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex justify-center items-center px-4 py-8">
       <div className="w-full max-w-md bg-white shadow-lg rounded-2xl p-6 sm:p-8">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-center">
+        <h1 className="text-3xl font-bold mb-2 text-center text-gray-900">
           ログイン
         </h1>
 
-        <p className="text-sm text-gray-500 text-center mb-6">
+        <p className="text-base text-gray-600 text-center mb-6">
           AI体調相談アプリにログイン
         </p>
 
         {error && (
-          <div className={`mb-4 px-4 py-3 rounded-lg text-sm ${
+          <div className={`mb-4 px-4 py-3 rounded-lg text-base ${
             isLocked
-              ? 'bg-orange-50 border border-orange-200 text-orange-700'
-              : 'bg-red-50 border border-red-200 text-red-700'
+              ? 'bg-orange-50 border border-orange-200 text-orange-800'
+              : 'bg-red-50 border border-red-200 text-red-800'
           }`}>
             {isLocked && (
-              <p className="font-medium mb-1">アカウントロック</p>
+              <p className="font-bold mb-1">アカウントロック</p>
             )}
             {error}
           </div>
         )}
 
         <div onKeyDown={handleKeyDown}>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-base font-medium text-gray-900 mb-1">
             メールアドレス
           </label>
           <input
@@ -95,10 +93,10 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => { setEmail(e.target.value); setIsLocked(false) }}
             disabled={isLocked}
-            className="w-full border border-gray-300 p-3 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition disabled:bg-gray-100"
+            className="w-full border border-gray-300 p-3 rounded-lg mb-4 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition disabled:bg-gray-100 disabled:text-gray-500"
           />
 
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-base font-medium text-gray-900 mb-1">
             パスワード
           </label>
           <input
@@ -107,21 +105,21 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={isLocked}
-            className="w-full border border-gray-300 p-3 rounded-lg mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition disabled:bg-gray-100"
+            className="w-full border border-gray-300 p-3 rounded-lg mb-6 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition disabled:bg-gray-100 disabled:text-gray-500"
           />
         </div>
 
         <button
           onClick={login}
           disabled={loading || !email.trim() || !password.trim() || isLocked}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg font-medium transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg text-base font-bold transition disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {loading ? 'ログイン中...' : 'ログイン'}
         </button>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-base text-gray-600">
           アカウントをお持ちでない方は{' '}
-          <Link href="/signup" className="text-blue-600 hover:underline font-medium">
+          <Link href="/signup" className="text-blue-600 hover:underline font-bold">
             新規登録
           </Link>
         </p>

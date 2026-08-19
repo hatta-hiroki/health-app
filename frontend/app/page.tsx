@@ -447,7 +447,7 @@ export default function Home() {
     <main className="min-h-screen bg-gray-50 px-4 py-6 sm:p-10">
       <div className="max-w-3xl mx-auto bg-white p-5 sm:p-8 rounded-2xl shadow-lg">
         {/* ヘッダー */}
-        <h1 className="text-xl sm:text-3xl font-bold mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-gray-900">
           AI体調相談アプリ
         </h1>
 
@@ -589,7 +589,7 @@ export default function Home() {
 
         {/* 症状入力 */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-base font-medium text-gray-900 mb-2">
             気になる症状を入力してください
           </label>
           <textarea
@@ -598,7 +598,7 @@ export default function Home() {
             onChange={(e) => setSymptom(e.target.value)}
             placeholder="例：肩が痛い、頭がぼーっとする"
             disabled={questions.length > 0}
-            className="w-full border border-gray-300 rounded-lg p-3 h-32 sm:h-40 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition disabled:bg-gray-100 disabled:text-gray-500"
+            className="w-full border border-gray-300 rounded-lg p-3 h-32 sm:h-40 resize-none text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition disabled:bg-gray-100 disabled:text-gray-500"
           />
           <div className="text-xs text-gray-400 mt-1 text-right">
             {symptom.length} / 300文字
@@ -637,14 +637,14 @@ export default function Home() {
 
             {questions.map((question, index) => (
               <div key={index} className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-base font-medium text-gray-900 mb-1">
                   {index + 1}. {question}
                 </label>
                 <input
                   type="text"
                   value={answers[index] || ''}
                   onChange={(e) => updateAnswer(index, e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  className="w-full border border-gray-300 rounded-lg p-3 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   placeholder="回答を入力"
                 />
               </div>
