@@ -251,8 +251,13 @@ def get_weather_info(prefecture: str, city: str) -> Optional[dict]:
 
 # Request
 class ProfileRequest(BaseModel):
-    prefecture: str = Field(..., min_length=2, max_length=10)
-    city: str = Field(..., min_length=1, max_length=50)
+    prefecture: str = Field("", max_length=10)
+    city: str = Field("", max_length=50)
+    gender: Optional[str] = Field(None, max_length=10)
+    age: Optional[int] = Field(None, ge=0, le=150)
+    height: Optional[float] = Field(None, ge=0, le=300)
+    weight: Optional[float] = Field(None, ge=0, le=500)
+    medical_conditions: Optional[str] = Field(None, max_length=500)
 
 class ProfileResponse(BaseModel):
     id: int
@@ -260,6 +265,11 @@ class ProfileResponse(BaseModel):
     prefecture: str
     city: str
     plan: str = "free"
+    gender: Optional[str] = None
+    age: Optional[int] = None
+    height: Optional[float] = None
+    weight: Optional[float] = None
+    medical_conditions: Optional[str] = None
 
 class WeatherResponse(BaseModel):
     weather: str
@@ -516,6 +526,11 @@ def upsert_profile(req: ProfileRequest, user=Depends(get_current_user)):
                 .update({
                     "prefecture": req.prefecture,
                     "city": req.city,
+                    "gender": req.gender,
+                    "age": req.age,
+                    "height": req.height,
+                    "weight": req.weight,
+                    "medical_conditions": req.medical_conditions,
                 })
                 .eq("user_id", user.id)
                 .execute()
@@ -529,6 +544,11 @@ def upsert_profile(req: ProfileRequest, user=Depends(get_current_user)):
                     "user_id": user.id,
                     "prefecture": req.prefecture,
                     "city": req.city,
+                    "gender": req.gender,
+                    "age": req.age,
+                    "height": req.height,
+                    "weight": req.weight,
+                    "medical_conditions": req.medical_conditions,
                 })
                 .execute()
             )
@@ -695,6 +715,7 @@ def analyze(req: AnalyzeRequest,user=Depends(get_current_user)):
 
     # プレミアムプランのみ天気情報を取得
     weather_context = ""
+    profile_context = ""
     if plan == "premium":
         try:
             profile_response = (
@@ -707,9 +728,31 @@ def analyze(req: AnalyzeRequest,user=Depends(get_current_user)):
 
             if profile_response.data:
                 profile = profile_response.data[0]
-                weather = get_weather_info(profile["prefecture"], profile["city"])
-                if weather:
-                    weather_context = f"""
+
+                # プロフィール情報をコンテキストに追加
+                profile_parts = []
+                if profile.get("gender"):
+                    profile_parts.append(f"性別: {profile['gender']}")
+                if profile.get("age"):
+                    profile_parts.append(f"年齢: {profile['age']}歳")
+                if profile.get("height"):
+                    profile_parts.append(f"身長: {profile['height']}cm")
+                if profile.get("weight"):
+                    profile_parts.append(f"体重: {profile['weight']}kg")
+                if profile.get("height") and profile.get("weight"):
+                    bmi = round(profile["weight"] / ((profile["height"] / 100) ** 2), 1)
+                    profile_parts.append(f"BMI: {bmi}")
+                if profile.get("medical_conditions"):
+                    profile_parts.append(f"既往歴・持病: {profile['medical_conditions']}")
+
+                if profile_parts:
+                    profile_context = "\n    ユーザー情報:\n    - " + "\n    - ".join(profile_parts)
+
+                # 天気情報を取得
+                if profile.get("prefecture") and profile.get("city"):
+                    weather = get_weather_info(profile["prefecture"], profile["city"])
+                    if weather:
+                        weather_context = f"""
     現在の気象情報（{weather['location']}）:
     - 天候: {weather['weather']}
     - 気温: {weather['temperature']}℃（体感: {weather['feels_like']}℃）
@@ -717,12 +760,12 @@ def analyze(req: AnalyzeRequest,user=Depends(get_current_user)):
     - 気圧: {weather['pressure']}hPa
     - 風速: {weather['wind_speed']}m/s"""
 
-                    if weather.get("alerts"):
-                        alert_texts = [a["event"] for a in weather["alerts"]]
-                        weather_context += f"\n    - 気象警報: {', '.join(alert_texts)}"
+                        if weather.get("alerts"):
+                            alert_texts = [a["event"] for a in weather["alerts"]]
+                            weather_context += f"\n    - 気象警報: {', '.join(alert_texts)}"
 
         except Exception as e:
-            logger.warning("天気情報取得スキップ: %s", e)
+            logger.warning("プロフィール/天気情報取得スキップ: %s", e)
 
     user_input = f"""
     症状:
@@ -730,6 +773,7 @@ def analyze(req: AnalyzeRequest,user=Depends(get_current_user)):
 
     問診結果:
     {answer_text}
+    {profile_context}
     {weather_context}
     """
 
@@ -742,6 +786,15 @@ def analyze(req: AnalyzeRequest,user=Depends(get_current_user)):
 
                     症状を分析し、
                     指定されたスキーマに従って回答してください。
+
+                    ユーザー情報が提供されている場合は、
+                    年齢、性別、BMI、既往歴・持病を考慮して
+                    分析を行ってください。
+
+                    例：
+                    - 持病がある場合、症状との関連性を検討する
+                    - 年齢や性別に応じたリスク要因を考慮する
+                    - BMIが高い/低い場合の影響を分析に含める
 
                     気象情報が提供されている場合は、
                     気圧の変化、台風の接近、気温差、湿度など

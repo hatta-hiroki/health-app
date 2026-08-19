@@ -20,6 +20,11 @@ export default function ProfilePage() {
   const router = useRouter()
   const [prefecture, setPrefecture] = useState('')
   const [city, setCity] = useState('')
+  const [gender, setGender] = useState('')
+  const [age, setAge] = useState('')
+  const [height, setHeight] = useState('')
+  const [weight, setWeight] = useState('')
+  const [medicalConditions, setMedicalConditions] = useState('')
   const [loading, setLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
   const [error, setError] = useState('')
@@ -52,6 +57,11 @@ export default function ProfilePage() {
           if (data) {
             setPrefecture(data.prefecture || '')
             setCity(data.city || '')
+            setGender(data.gender || '')
+            setAge(data.age ? String(data.age) : '')
+            setHeight(data.height ? String(data.height) : '')
+            setWeight(data.weight ? String(data.weight) : '')
+            setMedicalConditions(data.medical_conditions || '')
             setPlan(data.plan || 'free')
             if (data.prefecture && data.city) {
               setIsEdit(true)
@@ -101,7 +111,15 @@ export default function ProfilePage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ prefecture, city }),
+        body: JSON.stringify({
+          prefecture,
+          city,
+          gender: gender || null,
+          age: age ? parseInt(age) : null,
+          height: height ? parseFloat(height) : null,
+          weight: weight ? parseFloat(weight) : null,
+          medical_conditions: medicalConditions || null,
+        }),
       })
 
       if (!response.ok) {
@@ -152,14 +170,14 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen flex justify-center items-center px-4 py-8">
-      <div className="w-full max-w-md bg-white shadow-lg rounded-2xl p-6 sm:p-8">
+    <main className="min-h-screen flex justify-center items-start px-4 py-8">
+      <div className="w-full max-w-lg bg-white shadow-lg rounded-2xl p-6 sm:p-8">
         <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-center">
           {isEdit ? 'プロフィール編集' : 'プロフィール登録'}
         </h1>
 
         <p className="text-sm text-gray-500 text-center mb-6">
-          住所を登録すると、天気情報を加味した分析が可能になります
+          登録情報をもとに、より精度の高い分析を行います
         </p>
 
         {error && (
@@ -174,32 +192,137 @@ export default function ProfilePage() {
           </div>
         )}
 
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          都道府県
-        </label>
-        <select
-          value={prefecture}
-          onChange={(e) => setPrefecture(e.target.value)}
-          className="w-full border border-gray-300 p-3 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white"
-        >
-          <option value="">選択してください</option>
-          {PREFECTURES.map((pref) => (
-            <option key={pref} value={pref}>
-              {pref}
-            </option>
-          ))}
-        </select>
+        {/* 住所セクション */}
+        <div className="mb-6">
+          <h2 className="text-sm font-bold text-gray-800 mb-3 pb-2 border-b border-gray-200">
+            📍 住所情報
+          </h2>
 
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          市区町村
-        </label>
-        <input
-          type="text"
-          placeholder="例：新宿区、横浜市中区"
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          className="w-full border border-gray-300 p-3 rounded-lg mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-        />
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            都道府県 <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={prefecture}
+            onChange={(e) => setPrefecture(e.target.value)}
+            className="w-full border border-gray-300 p-3 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white"
+          >
+            <option value="">選択してください</option>
+            {PREFECTURES.map((pref) => (
+              <option key={pref} value={pref}>
+                {pref}
+              </option>
+            ))}
+          </select>
+
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            市区町村 <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            placeholder="例：新宿区、横浜市中区"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+          />
+        </div>
+
+        {/* 基本情報セクション */}
+        <div className="mb-6">
+          <h2 className="text-sm font-bold text-gray-800 mb-3 pb-2 border-b border-gray-200">
+            👤 基本情報
+          </h2>
+
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            性別
+          </label>
+          <select
+            value={gender}
+            onChange={(e) => setGender(e.target.value)}
+            className="w-full border border-gray-300 p-3 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white"
+          >
+            <option value="">選択してください</option>
+            <option value="男性">男性</option>
+            <option value="女性">女性</option>
+            <option value="その他">その他</option>
+            <option value="回答しない">回答しない</option>
+          </select>
+
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            年齢
+          </label>
+          <input
+            type="number"
+            placeholder="例：35"
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
+            min="0"
+            max="150"
+            className="w-full border border-gray-300 p-3 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+          />
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                身長 (cm)
+              </label>
+              <input
+                type="number"
+                placeholder="例：170"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+                min="0"
+                max="300"
+                step="0.1"
+                className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                体重 (kg)
+              </label>
+              <input
+                type="number"
+                placeholder="例：65"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                min="0"
+                max="500"
+                step="0.1"
+                className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              />
+            </div>
+          </div>
+
+          {height && weight && (
+            <p className="text-xs text-gray-500 mt-2">
+              BMI: {(parseFloat(weight) / ((parseFloat(height) / 100) ** 2)).toFixed(1)}
+            </p>
+          )}
+        </div>
+
+        {/* 持病セクション */}
+        <div className="mb-6">
+          <h2 className="text-sm font-bold text-gray-800 mb-3 pb-2 border-b border-gray-200">
+            🏥 既往歴・持病
+          </h2>
+
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            持病や過去の病歴があれば入力してください
+          </label>
+          <textarea
+            placeholder="例：高血圧、糖尿病、花粉症、腰椎ヘルニア（2020年手術済み）"
+            value={medicalConditions}
+            onChange={(e) => setMedicalConditions(e.target.value)}
+            maxLength={500}
+            className="w-full border border-gray-300 p-3 rounded-lg h-24 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+          />
+          <p className="text-xs text-gray-400 mt-1 text-right">
+            {medicalConditions.length} / 500文字
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            ※ 相談時にAIが持病との関連性を考慮して分析します
+          </p>
+        </div>
 
         <button
           onClick={saveProfile}
