@@ -505,6 +505,7 @@ def get_history(user=Depends(get_current_user)):
                 "created_at",
                 desc=True
             )
+            .limit(20)
             .execute()
         )
 
@@ -987,7 +988,7 @@ def analyze(req: AnalyzeRequest,user=Depends(get_current_user)):
 
     logger.info("分析完了: user=%s, plan=%s", user.id, plan)
     
-    # プレミアムプランのみ履歴保存
+    # プレミアムプランのみ履歴保存（上限20件、超過分は古いものから削除）
     if plan == "premium":
         try:
             supabase.table("symptom_history").insert({
@@ -1001,6 +1002,19 @@ def analyze(req: AnalyzeRequest,user=Depends(get_current_user)):
                 "recommended_department":result.recommended_department,
                 "red_flags":result.red_flags
                 }).execute()
+
+            # 20件を超えた古い履歴を削除
+            history_response = (
+                supabase
+                .table("symptom_history")
+                .select("id")
+                .eq("user_id", user.id)
+                .order("created_at", desc=True)
+                .execute()
+            )
+            if len(history_response.data) > 20:
+                old_ids = [r["id"] for r in history_response.data[20:]]
+                supabase.table("symptom_history").delete().in_("id", old_ids).execute()
         
         except Exception as e:
             logger.error("Supabase Error: %s", e)
