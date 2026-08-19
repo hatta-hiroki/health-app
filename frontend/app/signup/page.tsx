@@ -71,7 +71,7 @@ export default function SignupPage() {
         return
       }
 
-      setMessage('登録が完了しました！確認メールをご確認ください。')
+      setMessage('登録が完了しました！ログインしてご利用ください。')
     } catch (e) {
       setError('ネットワークエラーが発生しました。通信環境をご確認ください')
     }

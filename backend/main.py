@@ -53,8 +53,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(","),
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # レートリミット設定
@@ -79,7 +79,7 @@ def check_rate_limit(user_id: str, plan: str = "free"):
         if plan == "free":
             raise HTTPException(
                 status_code=429,
-                detail="無料プランの1日の利用上限（1回）に達しました。プレミアムプランにアップグレードすると1日20回まで利用できます。"
+                detail="無料プランの1日の利用上限（1回）に達しました。プレミアムプランにアップグレードすると1日10回まで利用できます。"
             )
         else:
             raise HTTPException(
@@ -282,14 +282,14 @@ class WeatherResponse(BaseModel):
     location: str
 
 class SymptomRequest(BaseModel):
-    symptom: str = Field(..., min_length=1, max_length=500)
+    symptom: str = Field(..., min_length=1, max_length=300)
 
 class QuestionAnswer(BaseModel):
     question: str = Field(..., min_length=1, max_length=300)
     answer: str = Field(..., min_length=1, max_length=1000)
 
 class AnalyzeRequest(BaseModel):
-    symptom: str = Field(..., min_length=1, max_length=500)
+    symptom: str = Field(..., min_length=1, max_length=300)
     answers: list[QuestionAnswer] = Field(..., min_length=1, max_length=10)
 
 class QuestionResult(BaseModel):
@@ -456,24 +456,34 @@ def get_history(user=Depends(get_current_user)):
 @app.delete("/history/{history_id}")
 def delete_history(history_id: int,user=Depends(get_current_user)):
 
-    response = (
-        supabase
-        .table("symptom_history")
-        .delete()
-        .eq("id", history_id)
-        .eq("user_id", user.id)
-        .execute()
-    )
-
-    if not response.data:
-        raise HTTPException(
-            status_code=404,
-            detail="履歴が見つかりません"
+    try:
+        response = (
+            supabase
+            .table("symptom_history")
+            .delete()
+            .eq("id", history_id)
+            .eq("user_id", user.id)
+            .execute()
         )
 
-    return {
-        "message": "削除しました"
-    }
+        if not response.data:
+            raise HTTPException(
+                status_code=404,
+                detail="履歴が見つかりません"
+            )
+
+        return {
+            "message": "削除しました"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("History Delete Error: %s", e)
+        raise HTTPException(
+            status_code=500,
+            detail="履歴の削除に失敗しました"
+        )
 
 # プロフィール取得
 @app.get("/profile", response_model=Optional[ProfileResponse])
@@ -628,7 +638,7 @@ def create_questions(req: SymptomRequest,user=Depends(get_current_user)):
         if plan == "free":
             raise HTTPException(
                 status_code=429,
-                detail="無料プランの1日の利用上限（1回）に達しました。プレミアムプランにアップグレードすると1日20回まで利用できます。"
+                detail="無料プランの1日の利用上限（1回）に達しました。プレミアムプランにアップグレードすると1日10回まで利用できます。"
             )
         else:
             raise HTTPException(
