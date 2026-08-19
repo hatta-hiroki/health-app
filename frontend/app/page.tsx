@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
@@ -48,6 +49,7 @@ type History = {
 }
 
 export default function Home() {
+  const router = useRouter()
   const [session, setSession] = useState<any>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [symptom, setSymptom] = useState('')
@@ -153,6 +155,17 @@ export default function Home() {
     if (!symptom.trim()) {
       setError('症状を入力してください')
       return
+    }
+
+    // プレミアムでプロフィール未登録の場合は警告
+    if (profile?.plan === 'premium' && (!profile.prefecture || !profile.city)) {
+      const proceed = confirm(
+        'プロフィールが未登録です。\n\n登録すると天気・体質を考慮した精度の高い診断が受けられます。\n\nこのまま相談を開始しますか？'
+      )
+      if (!proceed) {
+        router.push('/profile')
+        return
+      }
     }
 
     setLoading(true)
@@ -494,11 +507,11 @@ export default function Home() {
               </div>
             </div>
           </div>
-        ) : (
+        ) : profile.prefecture && profile.city ? (
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
                   <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full font-medium">
                     プレミアム
                   </span>
@@ -512,18 +525,14 @@ export default function Home() {
                       （{new Date(usage.reset_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}に復活）
                     </span>
                   )}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
                   <span className="text-sm font-medium text-blue-900">
                     📍 {profile.prefecture}{profile.city}
                   </span>
-                  <Link
-                    href="/profile"
-                    className="text-xs text-blue-600 hover:underline"
-                  >
-                    編集
-                  </Link>
                 </div>
                 {weather ? (
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-blue-800">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-blue-800 mt-1">
                     <span>🌤 {weather.weather}</span>
                     <span>🌡 {weather.temperature}℃</span>
                     <span>💧 {weather.humidity}%</span>
@@ -531,7 +540,7 @@ export default function Home() {
                     <span>💨 {weather.wind_speed}m/s</span>
                   </div>
                 ) : (
-                  <p className="text-xs text-blue-600">天気情報を取得中...</p>
+                  <p className="text-xs text-blue-600 mt-1">天気情報を取得中...</p>
                 )}
                 {weather?.alerts && weather.alerts.length > 0 && (
                   <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
@@ -539,6 +548,41 @@ export default function Home() {
                   </div>
                 )}
               </div>
+              <Link
+                href="/profile"
+                className="shrink-0 bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition text-center"
+              >
+                プロフィール編集
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-300 rounded-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full font-medium">
+                    プレミアム
+                  </span>
+                  {usage && (
+                    <span className="text-xs text-gray-500">
+                      残り{usage.remaining}/{usage.daily_limit}回
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm font-medium text-amber-800">
+                  プロフィールを登録してください
+                </p>
+                <p className="text-xs text-amber-700 mt-1">
+                  住所・年齢・持病などを登録すると、天気や体質を考慮した精度の高い診断が受けられます
+                </p>
+              </div>
+              <Link
+                href="/profile"
+                className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition text-center"
+              >
+                プロフィールを登録
+              </Link>
             </div>
           </div>
         )}
